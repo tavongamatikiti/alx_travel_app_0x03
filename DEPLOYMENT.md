@@ -365,19 +365,98 @@ curl -X POST https://YOUR_USERNAME.pythonanywhere.com/api/payments/initiate/ \
 - Ensure virtual environment path is correct
 - Verify WSGI file has correct username
 
-### Error: "ModuleNotFoundError"
+### Error: "ModuleNotFoundError: No module named 'drf_yasg'"
 
-- Activate venv and reinstall requirements:
-  ```bash
-  source venv/bin/activate
-  pip install -r requirements.txt -r requirements-prod.txt
-  ```
+**Cause:** Missing dependencies in virtual environment
+
+**Fix:**
+```bash
+cd ~/alx_travel_app_0x03
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+### Error: "ModuleNotFoundError: No module named 'django_filters'"
+
+**Cause:** `django-filter` package missing from requirements.txt
+
+**Fix:**
+1. Add to `requirements.txt`:
+   ```
+   django-filter==24.3
+   ```
+2. Install it:
+   ```bash
+   pip install django-filter==24.3
+   ```
+
+### Error: Blank White Page on Swagger
+
+**Cause:** Static files not being served (CSS/JS returning 404)
+
+**Fix:**
+1. Collect static files:
+   ```bash
+   python manage.py collectstatic --noinput
+   ```
+2. Configure static files mapping on Web tab:
+   - URL: `/static/`
+   - Directory: `/home/YOUR_USERNAME/alx_travel_app_0x03/staticfiles/`
+3. Reload web app
+
+### Error: Swagger Requiring Login
+
+**Cause:** `USE_SESSION_AUTH` enabled in settings
+
+**Fix:** In `settings.py`, change:
+```python
+SWAGGER_SETTINGS = {
+    'USE_SESSION_AUTH': False,  # Must be False for public access
+    'JSON_EDITOR': True,
+}
+```
+
+### Error: "DisallowedHost at /"
+
+**Cause:** PythonAnywhere domain not in `ALLOWED_HOSTS`
+
+**Fix:** In `settings.py`, ensure:
+```python
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[
+    'localhost',
+    '127.0.0.1',
+    'YOUR_USERNAME.pythonanywhere.com'
+])
+```
+
+Or in `.env`:
+```bash
+ALLOWED_HOSTS=YOUR_USERNAME.pythonanywhere.com,localhost,127.0.0.1
+```
+
+### Error: Celery Connection Refused (CloudAMQP)
+
+**For PythonAnywhere Free Tier:**
+
+**Cause:** Free tier blocks external AMQP connections
+
+**Fix - Option 1 (Free Tier Workaround):** Enable eager mode in `settings.py`:
+```python
+# For PythonAnywhere Free Tier - Execute tasks synchronously
+CELERY_TASK_ALWAYS_EAGER = True
+CELERY_TASK_EAGER_PROPAGATES = True
+```
+
+**Fix - Option 2 (Paid Tier):** Upgrade to PythonAnywhere Hacker plan ($5/month) which allows external connections
 
 ### Database Connection Error
 
 - Verify database credentials in `.env`
 - Check Database tab for correct host and port
-- Ensure `mysqlclient` is installed
+- Ensure `mysqlclient` is installed:
+  ```bash
+  pip install mysqlclient
+  ```
 
 ### Static Files Not Loading
 
@@ -390,6 +469,7 @@ curl -X POST https://YOUR_USERNAME.pythonanywhere.com/api/payments/initiate/ \
 - Check CloudAMQP URL is correct
 - Verify RabbitMQ instance is active on CloudAMQP
 - Check Celery worker logs in Bash console
+- For free tier, use `CELERY_TASK_ALWAYS_EAGER = True`
 
 ### Email Not Sending
 
