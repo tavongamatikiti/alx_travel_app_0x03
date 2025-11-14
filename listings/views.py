@@ -286,6 +286,90 @@ def initiate_payment(request):
         )
 
 
+@swagger_auto_schema(
+    method='get',
+    manual_parameters=[
+        openapi.Parameter(
+            'tx_ref',
+            openapi.IN_QUERY,
+            description="Transaction reference from payment initiation",
+            type=openapi.TYPE_STRING,
+            required=True
+        )
+    ],
+    responses={
+        200: openapi.Response(
+            description="Payment verified successfully",
+            examples={
+                "application/json": {
+                    "status": "success",
+                    "message": "Payment verified and completed successfully",
+                    "data": {
+                        "payment_id": "uuid-string",
+                        "booking_id": "uuid-string",
+                        "payment_status": "completed",
+                        "amount": "2500.00",
+                        "transaction_id": "chapa-tx-id"
+                    }
+                }
+            }
+        ),
+        400: "Bad Request - Missing tx_ref or payment verification failed",
+        404: "Payment not found"
+    },
+    operation_description="""
+    Verify a payment transaction with Chapa.
+
+    This endpoint checks the payment status with Chapa and:
+    - Updates payment status to 'completed' if successful
+    - Updates booking status to 'confirmed'
+    - Sends confirmation email to the user
+
+    Supports both GET and POST methods.
+    """
+)
+@swagger_auto_schema(
+    method='post',
+    manual_parameters=[
+        openapi.Parameter(
+            'tx_ref',
+            openapi.IN_QUERY,
+            description="Transaction reference from payment initiation",
+            type=openapi.TYPE_STRING,
+            required=True
+        )
+    ],
+    responses={
+        200: openapi.Response(
+            description="Payment verified successfully",
+            examples={
+                "application/json": {
+                    "status": "success",
+                    "message": "Payment verified and completed successfully",
+                    "data": {
+                        "payment_id": "uuid-string",
+                        "booking_id": "uuid-string",
+                        "payment_status": "completed",
+                        "amount": "2500.00",
+                        "transaction_id": "chapa-tx-id"
+                    }
+                }
+            }
+        ),
+        400: "Bad Request - Missing tx_ref or payment verification failed",
+        404: "Payment not found"
+    },
+    operation_description="""
+    Verify a payment transaction with Chapa (POST method).
+
+    This endpoint checks the payment status with Chapa and:
+    - Updates payment status to 'completed' if successful
+    - Updates booking status to 'confirmed'
+    - Sends confirmation email to the user
+
+    Use this after completing payment on Chapa checkout page.
+    """
+)
 @api_view(['GET', 'POST'])
 @permission_classes([permissions.AllowAny])
 def verify_payment(request):
