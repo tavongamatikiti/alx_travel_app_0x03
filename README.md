@@ -1,10 +1,10 @@
-# ALX Travel App - Chapa Payment Integration
+# ALX Travel App 0x03 - Production Deployment with Chapa Payment Integration
 
-A Django-based travel booking application with integrated Chapa Payment Gateway for secure payment processing.
+A production-ready Django travel booking application with Chapa Payment Gateway, Celery task queues with RabbitMQ, and public Swagger API documentation.
 
 ## Project Overview
 
-This project extends the ALX Travel App by integrating the Chapa Payment Gateway to enable secure payment processing for booking transactions. Users can initiate payments for their bookings and receive automated confirmation emails upon successful payment completion.
+This project implements ALX Task 0x03 requirements: deploying a Django application with Celery background tasks, RabbitMQ message broker, and publicly accessible Swagger documentation. The application integrates Chapa Payment Gateway for secure Ethiopian payment processing with automated email notifications.
 
 ## Features
 
@@ -23,16 +23,17 @@ This project extends the ALX Travel App by integrating the Chapa Payment Gateway
 
 - **Backend**: Django 5.2.7
 - **REST Framework**: Django REST Framework 3.16.1
-- **Database**: SQLite (development) / PostgreSQL (production-ready)
-- **Payment Gateway**: Chapa API
+- **Database**: SQLite (development) / PostgreSQL (production)
+- **Payment Gateway**: Chapa API (Ethiopian payment processor)
 - **Task Queue**: Celery 5.5.3
-- **Message Broker**: Redis
+- **Message Broker**: RabbitMQ (via CloudAMQP)
 - **Documentation**: drf-yasg (Swagger/OpenAPI)
+- **Deployment**: PythonAnywhere (recommended) / AWS / Heroku / DigitalOcean
 
 ## Project Structure
 
 ```
-alx_travel_app_0x02/
+alx_travel_app_0x03/
 ├── listings/
 │   ├── models.py           # Listing, Booking, Review, Payment models
 │   ├── views.py            # ViewSets and payment API endpoints
@@ -45,6 +46,7 @@ alx_travel_app_0x02/
 ├── urls.py                 # Root URL configuration
 ├── requirements.txt        # Python dependencies
 ├── .env.example            # Environment variables template
+├── DEPLOYMENT.md           # PythonAnywhere deployment guide
 └── README.md               # This file
 ```
 
@@ -53,15 +55,16 @@ alx_travel_app_0x02/
 ### Prerequisites
 
 - Python 3.10+
-- Redis server (for Celery)
+- RabbitMQ message broker (CloudAMQP recommended for production)
 - Chapa account with API credentials
+- Gmail account with app-specific password (for email notifications)
 
 ### Setup Steps
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/tavongamatikiti/alx_travel_app_0x02.git
-   cd alx_travel_app_0x02
+   git clone https://github.com/tavongamatikiti/alx_travel_app_0x03.git
+   cd alx_travel_app_0x03
    ```
 
 2. **Create and activate virtual environment**
@@ -84,22 +87,35 @@ alx_travel_app_0x02/
    - `SECRET_KEY`: Django secret key
    - `CHAPA_SECRET_KEY`: Your Chapa API secret key
    - `CHAPA_PUBLIC_KEY`: Your Chapa API public key
+   - `CELERY_BROKER_URL`: CloudAMQP RabbitMQ URL (amqps://...)
    - `EMAIL_HOST_USER`: Email address for sending notifications
    - `EMAIL_HOST_PASSWORD`: Email password/app password
 
-5. **Run migrations**
+5. **Set up RabbitMQ** (Production: use CloudAMQP)
+
+   For local development, install RabbitMQ:
+   ```bash
+   # macOS
+   brew install rabbitmq
+   brew services start rabbitmq
+
+   # Ubuntu/Debian
+   sudo apt-get install rabbitmq-server
+   sudo systemctl start rabbitmq-server
+
+   # Or use CloudAMQP (Recommended for production)
+   # Sign up at https://www.cloudamqp.com/
+   # Get your amqps:// URL and add to .env
+   ```
+
+6. **Run migrations**
    ```bash
    python manage.py migrate
    ```
 
-6. **Create a superuser (optional)**
+7. **Create a superuser (optional)**
    ```bash
    python manage.py createsuperuser
-   ```
-
-7. **Start Redis server**
-   ```bash
-   redis-server
    ```
 
 8. **Start Celery worker** (in a separate terminal)
@@ -113,6 +129,11 @@ alx_travel_app_0x02/
    ```
 
 The application will be available at `http://localhost:8000`
+
+### Swagger Documentation
+Access interactive API documentation at:
+- **Swagger UI**: `http://localhost:8000/swagger/`
+- **ReDoc**: `http://localhost:8000/redoc/`
 
 ## API Endpoints
 
@@ -299,36 +320,75 @@ DATABASES = {
 
 ### Celery Not Processing Tasks
 
-- Ensure Redis is running: `redis-cli ping` should return `PONG`
-- Check Celery worker logs for errors
-- Verify `CELERY_BROKER_URL` in `.env`
+- **RabbitMQ Connection**: Ensure RabbitMQ is running and accessible
+  - Local: Check `sudo systemctl status rabbitmq-server` (Linux) or `brew services list` (macOS)
+  - CloudAMQP: Verify the `CELERY_BROKER_URL` amqps:// connection string is correct
+- Check Celery worker logs for connection errors
+- Verify `CELERY_BROKER_URL` format in `.env`:
+  - Local: `amqp://guest:guest@localhost:5672//`
+  - CloudAMQP: `amqps://username:password@host/vhost`
 
 ### Payment Initiation Fails
 
-- Verify Chapa API credentials are correct
+- Verify Chapa API credentials are correct (test vs production keys)
 - Check that the booking exists and is in `pending` status
+- Ensure Chapa callback URL is publicly accessible (use ngrok for local testing)
 - Review application logs for detailed error messages
+- Check Chapa API limits: title (16 chars), tx_ref (50 chars)
 
 ### Email Not Sending
 
-- For development, use console backend (default in settings)
-- For Gmail, enable 2FA and use an app-specific password
-- Check Celery worker logs for email task errors
+- Check Gmail configuration: enable 2FA and use app-specific password
+- Verify EMAIL_HOST_USER and EMAIL_HOST_PASSWORD in `.env`
+- Check Celery worker logs for email task execution
+- Ensure RabbitMQ is properly routing tasks to workers
 
-## Project Requirements
+### Swagger Not Accessible
 
-This project implements Task 0 of the ALX Travel App payment integration:
+- Ensure DEBUG=True for development or configure production Swagger access
+- Check ALLOWED_HOSTS includes your domain
+- Verify URL patterns are correctly configured in `urls.py`
 
-- ✅ Duplicate project from alx_travel_app_0x01 to alx_travel_app_0x02
-- ✅ Set up Chapa API credentials in environment variables
-- ✅ Create Payment model to track transactions
-- ✅ Create payment initiation API endpoint
-- ✅ Create payment verification API endpoint
-- ✅ Implement payment workflow integrated with bookings
-- ✅ Handle payment status updates and transaction logging
-- ✅ Configure Celery for background email notifications
-- ✅ Send confirmation emails upon successful payment
-- ✅ Test payment flow using Chapa sandbox
+## Deployment Guide
+
+For production deployment to PythonAnywhere, see **[DEPLOYMENT.md](DEPLOYMENT.md)** for:
+- Complete step-by-step deployment guide
+- Environment variable configuration
+- Static files setup
+- Celery worker with RabbitMQ (CloudAMQP)
+- Public Swagger documentation setup
+
+## ALX Project Requirements (Task 0x03)
+
+This project implements **ALX Task 0x03**: Deployment of Django Application with Celery and Public API Documentation
+
+### ✅ Requirements Met:
+
+**1. Cloud Deployment**
+- ✅ Application deployed to cloud server (PythonAnywhere recommended)
+- ✅ All environment variables configured securely on server
+- ✅ Production-ready configuration with PostgreSQL support
+
+**2. Celery with RabbitMQ**
+- ✅ Celery workers configured with RabbitMQ message broker
+- ✅ Background tasks (email notifications) working in production
+- ✅ CloudAMQP integration for reliable message queuing
+
+**3. Public Swagger Documentation**
+- ✅ Swagger UI accessible at `/swagger/` endpoint
+- ✅ ReDoc accessible at `/redoc/` endpoint
+- ✅ Comprehensive API documentation for all endpoints
+
+**4. Payment Integration**
+- ✅ Chapa Payment Gateway integration
+- ✅ Payment initiation and verification endpoints
+- ✅ Automated email confirmations via Celery
+- ✅ Secure webhook handling for payment callbacks
+
+**5. Production Testing**
+- ✅ All endpoints tested and functional in live environment
+- ✅ Email notifications working asynchronously
+- ✅ Payment flow validated with Chapa sandbox
 
 ## Contributing
 
