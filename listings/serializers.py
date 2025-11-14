@@ -4,7 +4,7 @@ Handles serialization of Listing and Booking models for API responses.
 """
 
 from rest_framework import serializers
-from .models import Listing, Booking, Review
+from .models import Listing, Booking, Review, Payment
 from django.contrib.auth.models import User
 
 
@@ -147,3 +147,33 @@ class ReviewSerializer(serializers.ModelSerializer):
             'updated_at'
         ]
         read_only_fields = ['review_id', 'created_at', 'updated_at']
+
+
+class PaymentInitiateSerializer(serializers.Serializer):
+    """
+    Serializer for payment initiation request.
+    User email and name are automatically retrieved from the booking for security.
+    """
+    booking_id = serializers.UUIDField(
+        required=True,
+        help_text="UUID of the booking to initiate payment for"
+    )
+    phone_number = serializers.CharField(
+        required=False,
+        max_length=20,
+        allow_blank=True,
+        help_text="Optional phone number for payment notifications"
+    )
+
+
+class PaymentResponseSerializer(serializers.Serializer):
+    """
+    Serializer for payment response data.
+    """
+    payment_id = serializers.UUIDField(read_only=True)
+    booking_id = serializers.UUIDField(read_only=True)
+    payment_status = serializers.CharField(read_only=True)
+    amount = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    transaction_id = serializers.CharField(read_only=True, allow_null=True)
+    checkout_url = serializers.URLField(read_only=True, allow_null=True)
+    transaction_reference = serializers.CharField(read_only=True)

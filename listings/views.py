@@ -13,8 +13,10 @@ from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Listing, Booking, Review, Payment
-from .serializers import ListingSerializer, BookingSerializer, ReviewSerializer
+from .serializers import ListingSerializer, BookingSerializer, ReviewSerializer, PaymentInitiateSerializer, PaymentResponseSerializer
 from .tasks import send_payment_confirmation_email
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 
 class ListingViewSet(viewsets.ModelViewSet):
@@ -100,6 +102,39 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 # Chapa Payment Integration Views
 
+@swagger_auto_schema(
+    method='post',
+    request_body=PaymentInitiateSerializer,
+    responses={
+        201: openapi.Response(
+            description="Payment initiated successfully",
+            examples={
+                "application/json": {
+                    "status": "success",
+                    "message": "Payment initiated successfully",
+                    "data": {
+                        "checkout_url": "https://checkout.chapa.co/...",
+                        "payment_id": "uuid-string",
+                        "transaction_reference": "tx-abc123..."
+                    }
+                }
+            }
+        ),
+        400: "Bad Request - Missing booking_id or Chapa API error",
+        404: "Booking not found",
+        500: "Internal Server Error"
+    },
+    operation_description="""
+    Initiate a payment transaction with Chapa.
+
+    **Security Note:** User email and name are automatically retrieved from the booking user.
+    You cannot override this information for security reasons.
+
+    Only provide:
+    - booking_id (required)
+    - phone_number (optional)
+    """
+)
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
 def initiate_payment(request):
