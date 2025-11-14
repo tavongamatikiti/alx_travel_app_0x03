@@ -458,14 +458,24 @@ def verify_payment(request):
                 payment.booking.status = 'confirmed'
                 payment.booking.save()
 
-                # Send confirmation email asynchronously
+                # Send confirmation email
                 try:
+                    # Try async task first
                     send_payment_confirmation_email.delay(
                         str(payment.payment_id),
                         str(payment.booking.booking_id)
                     )
                 except Exception as email_error:
-                    print(f"Failed to queue email: {email_error}")
+                    # If Celery broker fails (PythonAnywhere free tier), call directly
+                    print(f"Celery broker unavailable, sending email directly: {email_error}")
+                    try:
+                        send_payment_confirmation_email(
+                            str(payment.payment_id),
+                            str(payment.booking.booking_id)
+                        )
+                        print("Email sent successfully via direct call")
+                    except Exception as direct_error:
+                        print(f"Failed to send email directly: {direct_error}")
 
                 return Response(
                     {
