@@ -35,7 +35,7 @@ SECRET_KEY = env('SECRET_KEY', default='django-insecure-##uvb_x1$ktoa174_)@+vp6k
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env('DEBUG', default=True)
 
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1', 'tavymatikiti.pythonanywhere.com'])
 
 
 # Application definition
@@ -187,7 +187,7 @@ SWAGGER_SETTINGS = {
             'in': 'header'
         }
     },
-    'USE_SESSION_AUTH': True,
+    'USE_SESSION_AUTH': False,  # Disable login requirement for public access
     'JSON_EDITOR': True,
 }
 
@@ -198,6 +198,10 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
+
+# For PythonAnywhere Free Tier - Execute tasks synchronously (no broker needed)
+CELERY_TASK_ALWAYS_EAGER = True
+CELERY_TASK_EAGER_PROPAGATES = True
 
 # Email Configuration
 EMAIL_BACKEND = env('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
