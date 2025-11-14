@@ -2,6 +2,23 @@
 
 This guide provides step-by-step instructions for deploying the Django application with Celery and RabbitMQ to PythonAnywhere.
 
+## Recommended Reading
+
+**Before you begin, I strongly recommend reading the official PythonAnywhere deployment guide:**
+
+🔗 **[PythonAnywhere: Deploying an Existing Django Project](https://help.pythonanywhere.com/pages/DeployExistingDjangoProject/)**
+
+This official guide will help you understand:
+- How PythonAnywhere works with Django projects
+- WSGI configuration basics
+- Virtual environment setup
+- Static files handling
+- Common deployment pitfalls
+
+Reading this first will make the deployment process much smoother! ✨
+
+---
+
 ## Prerequisites
 
 - PythonAnywhere account (free or paid tier)
