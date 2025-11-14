@@ -105,17 +105,18 @@ class ReviewViewSet(viewsets.ModelViewSet):
 def initiate_payment(request):
     """
     Initiate a payment transaction with Chapa.
+    User information (email, name) is automatically retrieved from the booking.
 
     POST /api/payments/initiate/
 
     Request body:
     {
         "booking_id": "uuid-string",
-        "email": "user@example.com",
-        "first_name": "John",
-        "last_name": "Doe",
-        "phone_number": "0911234567"
+        "phone_number": "0911234567"  (optional)
     }
+
+    Note: User email and name are taken from the booking user for security.
+    You cannot override this information.
 
     Response:
     {
@@ -177,14 +178,14 @@ def initiate_payment(request):
         # Generate unique transaction reference (max 50 chars for Chapa)
         tx_ref = f"tx-{uuid.uuid4().hex[:12]}-{str(booking_id)[:8]}"
 
-        # Prepare Chapa payment data
+        # Prepare Chapa payment data - user info comes from booking only (security)
         chapa_data = {
             "amount": str(booking.total_price),
             "currency": "ETB",
-            "email": request.data.get('email', booking.user.email),
-            "first_name": request.data.get('first_name', booking.user.first_name or booking.user.username),
-            "last_name": request.data.get('last_name', booking.user.last_name or 'User'),
-            "phone_number": request.data.get('phone_number', ''),
+            "email": booking.user.email,  # Always use booking user's email
+            "first_name": booking.user.first_name or booking.user.username,  # User's actual first name
+            "last_name": booking.user.last_name or 'User',  # User's actual last name
+            "phone_number": request.data.get('phone_number', ''),  # Optional phone can be provided
             "tx_ref": tx_ref,
             "callback_url": os.getenv('CHAPA_CALLBACK_URL', 'http://localhost:8000/api/payments/verify/'),
             "return_url": request.data.get('return_url', 'http://localhost:8000/bookings'),
